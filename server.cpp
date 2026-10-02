@@ -36,31 +36,63 @@ class Stack
 public:
     // Implement these functions:
     Stack()
-    { // initialize the stack
+    {
+        count =0;
+        top=nullptr;
     }
     void push(const T &val)
     {
 
         // pushes the value on the stack if max limit is not reached yet.
+        if (count == MAX_STACK_DEPTH){
+            cout<<"Error"<<endl;
+            return;
+        }
+        Node*n=new Node;
+        n->data=val;
+        n->next=top;
+        top=n;
+        count++;
     }
     T pop()
     {
         // pop the top value on the stack
+        if(top==nullptr){
+            cout<<"Empty";
+            return T();
+        }
     }
     T &peek()
     {
         // returns the top value on the stack
+        if(top==nullptr){
+            cout<<"Empty";
+            return T();
+        }
+        return top->data;
+
     }
     bool isEmpty()
     {
+        retrun count==0;
     }
     int32_t depth()
     {
+        return count;
     }
     int32_t snapshot_into(T out[], int32_t maxLen)
     {
         // copies every frame, top to bottom in the array given as a parameter
         // this is what buildSnapshot() call, returns count written
+        int32_t ct=0;
+        Node*frame=top;
+        while(frame!=nullptr){
+            out[ct]=frame->data;
+            frame=frame->next;
+            ct++;
+        }
+        return ct;
+
     }
 };
 
@@ -148,18 +180,77 @@ struct PendingPatch
 bool readSourceLine(ifstream &in, string &out)
 {
     // reads the next nonblank line
+    string line;
+    while(getline(in,line)){
+        if(line!="")
+        {
+            out =line;
+            return true;
+        }
+    }
+    retrun false;
 }
 string firstWord(const string &line)
 {
     // returns first word from the input string
+    string word="";
+    int i =0;
+    while(i<line.size()&&linr[i]==' ')
+        i++;
+     while(i<line.size()&&linr[i]!=' '){
+        word+=linr[i];
+        i++;
+    }
+    return word;
+
 }
 string secondWord(const string &line)
 {
     // returns the second word
+    string word="";
+    int i =0;
+    while(i<line.size()&&linr[i]==' ')
+        i++;
+    while(i<line.size()&&linr[i]!=' ')
+        i++;
+    while(i<line.size()&&linr[i]==' ')
+        i++;
+    while(i<line.size()&&linr[i]!=' '){
+        word+=linr[i];
+        i++;
+    }
 }
 bool validateProgram(const char *sourcePath)
 {
     // for each func defined there should be exactly one func_end and no nested funcs allowed - 
+    ifstream in(sourcePath);
+    if(!in){
+        cout<<"Error File no Open"<<endl
+        return false;}
+    string line;
+    bool incheck=false;
+    while(readSourceLine(in,line)){
+        string word=firstWord(line);
+        if(word=="func"){
+            if(incheck==true){
+                cout<<"Error Nested Function"<<endl;
+                return false;
+            }
+            incheck=true;
+        }
+        if(word=="func_end"){
+            if (incheck==false){
+                cout<<"Error func_end is without func in start"<<endl;
+                return false;
+            }
+            incheck=false;
+        }
+    }
+    if(incheck==true){
+        cout<<"Error func never closed"<<endl;
+        return false;
+    }
+    return true;
 }
 
 // PASS 0x1: RESOLVE() -> resolve.bin
