@@ -74,7 +74,7 @@ public:
     }
     bool isEmpty()
     {
-        retrun count==0;
+        return count==0;
     }
     int32_t depth()
     {
@@ -188,17 +188,18 @@ bool readSourceLine(ifstream &in, string &out)
             return true;
         }
     }
-    retrun false;
+    return false;
 }
 string firstWord(const string &line)
 {
     // returns first word from the input string
     string word="";
     int i =0;
-    while(i<line.size()&&linr[i]==' ')
+    int n =line.size();
+    while(i<n&&line[i]==' ')
         i++;
-     while(i<line.size()&&linr[i]!=' '){
-        word+=linr[i];
+     while(i<n&&line[i]!=' '){
+        word+=line[i];
         i++;
     }
     return word;
@@ -209,23 +210,25 @@ string secondWord(const string &line)
     // returns the second word
     string word="";
     int i =0;
-    while(i<line.size()&&linr[i]==' ')
+    int n =line.size();
+    while(i<n&&line[i]==' ')
         i++;
-    while(i<line.size()&&linr[i]!=' ')
+    while(i<n&&line[i]!=' ')
         i++;
-    while(i<line.size()&&linr[i]==' ')
+    while(i<n&&line[i]==' ')
         i++;
-    while(i<line.size()&&linr[i]!=' '){
-        word+=linr[i];
+    while(i<n&&line[i]!=' '){
+        word+=line[i];
         i++;
     }
+    return word;
 }
 bool validateProgram(const char *sourcePath)
 {
     // for each func defined there should be exactly one func_end and no nested funcs allowed - 
     ifstream in(sourcePath);
     if(!in){
-        cout<<"Error File no Open"<<endl
+        cout<<"Error File no Open"<<endl;
         return false;}
     string line;
     bool incheck=false;
@@ -327,10 +330,12 @@ int32_t main()
 
     if (!validateProgram("source.bin"))
     {
+
         // send an error response instead of a .tdbg file
         return 1;
     }
-
+    cout << "Validation passed" << endl;
+    return 0;
     int64_t mainOffset = resolveProgram("source.bin", "resolve.bin");
 
     Timeline timeline;
