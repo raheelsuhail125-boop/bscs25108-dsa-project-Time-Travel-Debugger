@@ -334,8 +334,7 @@ int32_t main()
         // send an error response instead of a .tdbg file
         return 1;
     }
-    cout << "Validation passed" << endl;
-    return 0;
+   
     int64_t mainOffset = resolveProgram("source.bin", "resolve.bin");
 
     Timeline timeline;
