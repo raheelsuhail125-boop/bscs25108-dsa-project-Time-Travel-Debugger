@@ -10,3 +10,6 @@ Fixed few typos and erros in my stage 1 code and then tested them with 4 differn
 
 Day 4 04-10-2026
 No code today spent the day trying to figure out how to store the offset stuff and which functions can be used to do this.Got to know functions as ftell and fwrite.
+
+Day 5 05-10-2026
+no progress in terms of code still understanding what to do.
