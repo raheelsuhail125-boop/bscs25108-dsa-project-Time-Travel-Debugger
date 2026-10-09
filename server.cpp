@@ -261,11 +261,28 @@ int64_t writeResolveRecord(FILE *f, int64_t offsetField, const string &text)
 {
     // writes one [offset(8B)][size(4B)][string] record at the current file position
     // returns this record's own starting byte position
+    int64_t start = ftell(f);
+    int32_t size = text.size();
+    fwrite(&offsetField, sizeof(int64_t), 1, f);
+    fwrite(&size, sizeof(int32_t), 1, f);
+    fwrite(text.c_str(), 1, size, f);
+    return start;
     
 }
 int64_t readResolveRecord(FILE *f, string &outText)
 {
     // reads one record at the current position and advances past it, returns the offset field - the raw line text comes back untouched in outText.
+    int64_t offsetField;
+    int32_t size;
+    if (fread(&offsetField, sizeof(int64_t), 1, f) != 1)
+        return -1;
+    if (fread(&size, sizeof(int32_t), 1, f) != 1)
+        return -1;
+    string text(size, ' ');
+    if (size > 0 && fread(&text[0], 1, size, f) != (size_t)size)
+        return -1;
+    outText = text;
+    return offsetField;
 }
 int64_t resolveProgram(const char *sourcePath, const char *resolveBinPath)
 {
@@ -281,6 +298,38 @@ int64_t resolveProgram(const char *sourcePath, const char *resolveBinPath)
     // with its target's position. Patching happens after the full write
     // Returns the byte offset of main's FUNC header record.
     // if there is no main return the error 
+    ifstream in(sourcePath);
+    if(!in){
+        cout<<"Error "<<sourcePath<<endl;
+        return -1;
+    }
+    FILE *f=fopen(resolveBinPath,"w+b");
+    if(f==NULL){
+        cout<<"Cannot create "<<resolveBinPath<<end;
+        return -1;
+    }
+    int64_t offset =0;
+    string line;
+    while(readSourceLine(in,line)){
+        string word=firstWord(line);
+        if(word=="call"){
+            patches[patchCount].byteOffsetOfOffsetField=offset;
+            patches[patchCount].targetFuncName=secondWord(line);
+            patchCount++;
+            writeResolveRecord(f,0,line);
+        }
+        else
+        {
+            if(word=="func"){
+                funcArray[funcCount].funcName=secondWord(line);
+                funcArray[funcCount].byteOffsetInResolveBin=offset;
+                funcCount++;
+            }
+            writeResolveRecord(f,offset,line);}
+            offset=offset+8+4+line.size();
+        }
+    }
+
 }
 
 // PASS 0x2: EXECUTION (tokenization happens here)
