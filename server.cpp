@@ -114,16 +114,30 @@ public:
     // Implement these functions
     Timeline()
     {
+        head = nullptr;
+        tail = nullptr;
+        ct= 0;
     }
     void record(Snapshot *s)
     {
-        // add record in the timeline
+        TimelineNode *n = new TimelineNode;
+        n->data = s;
+        n->next = nullptr;
+        n->prev = tail;
+        if (tail == nullptr)
+            head = n;
+        else
+            tail->next = n;
+        tail = n;
+        ct++;
     }
     TimelineNode *begin()
     {
+        return head;
     }
     int32_t getStepCount()
-    {
+    {   
+        return ct;
     }
 };
 
@@ -305,7 +319,7 @@ int64_t resolveProgram(const char *sourcePath, const char *resolveBinPath)
     }
     FILE *f=fopen(resolveBinPath,"w+b");
     if(f==NULL){
-        cout<<"Cannot create "<<resolveBinPath<<end;
+        cout<<"Cannot create "<<resolveBinPath<<endl;
         return -1;
     }
     int64_t offset =0;
@@ -327,10 +341,33 @@ int64_t resolveProgram(const char *sourcePath, const char *resolveBinPath)
             }
             writeResolveRecord(f,offset,line);}
             offset=offset+8+4+line.size();
-        }
+        
     }
 
-}
+     for (int i = 0; i < patchCount; i++)
+    {
+        int64_t target = -1;
+        for (int j = 0; j < funcCount; j++)
+        {
+            if (funcArray[j].funcName == patches[i].targetFuncName)
+                target = funcArray[j].byteOffsetInResolveBin;
+        }
+        if (target == -1)
+        {
+            cout << "Error undefined function " << patches[i].targetFuncName << endl;
+            fclose(f);
+            return -1;
+        }
+        fseek(f, patches[i].byteOffsetOfOffsetField, SEEK_SET);
+        fwrite(&target, sizeof(int64_t), 1, f);
+    }
+    for (int j = 0; j < funcCount; j++)
+    {
+        if (funcArray[j].funcName == "main")
+            return funcArray[j].byteOffsetInResolveBin;
+    }
+    cout << "Error no main" << endl;
+    return -1;}
 
 // PASS 0x2: EXECUTION (tokenization happens here)
 enum TokenType
@@ -386,6 +423,8 @@ int32_t main()
     }
    
     int64_t mainOffset = resolveProgram("source.bin", "resolve.bin");
+     cout << "mainOffset = " << mainOffset << endl;
+    return 0;
 
     Timeline timeline;
     executeProgram("resolve.bin", mainOffset, timeline);

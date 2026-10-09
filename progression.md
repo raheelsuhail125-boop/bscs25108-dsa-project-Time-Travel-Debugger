@@ -16,3 +16,4 @@ no progress in terms of code still understanding what to do.
 
 Day 9 09-10-2026
 After days of contemplating and trying to understand the project wrote some code today of stage two.Read and write resolved record alos some part of resolve.Now i will prepare my quiz and continue this at night as an extention this time seems difficult.
+Friday part 2 completed stage 2 tested it and created timeline good day.
