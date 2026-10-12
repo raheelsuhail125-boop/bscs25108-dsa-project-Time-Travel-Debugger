@@ -181,6 +181,8 @@ void writeHeader(FILE *f, const TTDBHeader &h)
 {
     fwrite(h.magic, 1, 4, f);
     fwrite(&h.version, sizeof(int32_t), 1, f);
+    fwrite(&h.stepCount, sizeof(int32_t), 1, f);
+    fwrite(&h.indexOffset, sizeof(int64_t), 1, f);
 
     // placeholder for other two data members
 }
@@ -661,6 +663,42 @@ void executeProgram(const char *resolveBinPath, int64_t mainOffset, Timeline &ti
     fclose(f);
 }
 
+void writeInt32(FILE *f, int32_t value)
+{
+    fwrite(&value, sizeof(int32_t), 1, f);
+}
+
+void writeString(FILE *f, const string &s)
+{
+    int32_t len = s.size();
+    fwrite(&len, sizeof(int32_t), 1, f);
+    fwrite(s.c_str(), 1, len, f);
+}
+
+void writeFrame(FILE *f, const Frame &fr)
+{
+    writeString(f, fr.func_name);
+    writeInt32(f, fr.argc);
+    for (int i = 0; i < fr.argc; i++)
+    {
+        writeString(f, fr.argv[i].name);
+        writeInt32(f, fr.argv[i].value);
+    }
+    writeInt32(f, fr.returnLine);
+    writeInt32(f, fr.localCount);
+    for (int i = 0; i < fr.localCount; i++)
+    {
+        writeString(f, fr.locals[i].name);
+        writeInt32(f, fr.locals[i].value);
+    }
+}
+void writeSnapshot(FILE *f, Snapshot *s)
+{
+    writeInt32(f, s->stackDepth);
+    for (int i = 0; i < s->stackDepth; i++)
+        writeFrame(f, s->callStack[i]);
+}
+
 // PASS 0x3: SERIALIZE TIMELINE
 void writeTdbg(Timeline &timeline, const char *tdbgPath)
 {
@@ -669,6 +707,45 @@ void writeTdbg(Timeline &timeline, const char *tdbgPath)
     // placing each snapshot in the file while maintaining the index(starting point of each nth snapshot)
     // after timeline add the index array i the file
     // update the header
+     FILE *f = fopen(tdbgPath, "wb");
+    if (f == NULL)
+    {
+        cout << "Error cannot create " << tdbgPath << endl;
+        return;
+    }
+
+    TTDBHeader h;
+    h.magic[0] = 'T';
+    h.magic[1] = 'T';
+    h.magic[2] = 'D';
+    h.magic[3] = 'B';
+    h.version = 1;
+    h.stepCount = 0;
+    h.indexOffset = 0;
+    writeHeader(f, h);
+
+    int32_t count = timeline.getStepCount();
+    int64_t *index = new int64_t[count];
+    TimelineNode *node = timeline.begin();
+    int32_t i = 0;
+    while (node != nullptr)
+    {
+        index[i] = ftell(f);
+        writeSnapshot(f, node->data);
+        node = node->next;
+        i++;
+    }
+    int64_t indexStart = ftell(f);
+    for (int32_t j = 0; j < count; j++)
+        fwrite(&index[j], sizeof(int64_t), 1, f);
+
+    h.stepCount = count;
+    h.indexOffset = indexStart;
+    fseek(f, 0, SEEK_SET);
+    writeHeader(f, h);
+
+    fclose(f);
+    delete[] index;
 }
 void printTimeline(Timeline &timeline)
 {
@@ -704,12 +781,12 @@ int32_t main()
     }
    
     int64_t mainOffset = resolveProgram("source.bin", "resolve.bin");
-     cout << "mainOffset = " << mainOffset << endl;
-    return 0;
+     if (mainOffset == -1)
+        return 1;
+
 
     Timeline timeline;
     executeProgram("resolve.bin", mainOffset, timeline);
-    printTimeline(timeline);
     writeTdbg(timeline, "session.tdbg");
 
     return 0;

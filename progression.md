@@ -24,5 +24,8 @@ Spent the night understanding stage 3 (which is very hard btw) wrote some starti
 Day 11 11-10-2026
 Sunday wrote all the functions required for execute program.
 
-Day 12 12-10-26
+Day 12 12-10-2026
 completed execute program and checkd all the errors in my code till now and also checked the timeline.
+
+Day 13 13-10-2026
+the project is complete stage 4 Serialization is done and dusted and the project runs.Wrote helper funtion for writeTdbg and then tested it works fine.

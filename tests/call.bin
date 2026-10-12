@@ -1,4 +1,5 @@
 func main
+set k 5
 call foo k
 func_end
 func foo b
