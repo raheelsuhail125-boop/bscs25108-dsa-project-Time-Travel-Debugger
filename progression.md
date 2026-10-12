@@ -20,3 +20,6 @@ Friday part 2 completed stage 2 tested it and created timeline good day.
 
 Day 10 10-10-2026
 Spent the night understanding stage 3 (which is very hard btw) wrote some starting code and will finish it tomorrow seems ambitious but hope.
+
+Day 11 11-10-2026
+Sunday wrote all the functions required for execute program.
