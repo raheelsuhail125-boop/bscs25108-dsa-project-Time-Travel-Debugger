@@ -57,19 +57,28 @@ public:
     T pop()
     {
         // pop the top value on the stack
-        if(top==nullptr){
-            cout<<"Empty";
-            return T();
+        T val = T();
+        if (top != nullptr)
+        {
+            Node *old = top;
+            val = old->data;
+            top = top->next;
+            delete old;
+            count--;
         }
+        else
+            cout << "Error pop on empty stack" << endl;
+        return val;
     }
     T &peek()
     {
         // returns the top value on the stack
-        if(top==nullptr){
-            cout<<"Empty";
-            return T();
-        }
-        return top->data;
+       if (top == nullptr)
+    {
+        cout << "Error peek on empty stack" << endl;
+        exit(1);
+    }
+    return top->data;
 
     }
     bool isEmpty()
@@ -84,16 +93,16 @@ public:
     {
         // copies every frame, top to bottom in the array given as a parameter
         // this is what buildSnapshot() call, returns count written
-        int32_t ct=0;
-        Node*frame=top;
-        while(frame!=nullptr){
-            out[ct]=frame->data;
-            frame=frame->next;
-            ct++;
+        Node *cur = top;
+        int32_t n = 0;
+        while (cur != nullptr && n < maxLen)
+        {
+            out[n] = cur->data;
+            cur = cur->next;
+            n++;
         }
-        return ct;
-
-    }
+        return n;
+        }
 };
 
 
@@ -108,7 +117,7 @@ struct TimelineNode
 class Timeline
 {
     TimelineNode *head, *tail;
-    int32_t stepCount;
+    int32_t ct;
 
 public:
     // Implement these functions
@@ -358,9 +367,11 @@ int64_t resolveProgram(const char *sourcePath, const char *resolveBinPath)
             fclose(f);
             return -1;
         }
+        
         fseek(f, patches[i].byteOffsetOfOffsetField, SEEK_SET);
         fwrite(&target, sizeof(int64_t), 1, f);
     }
+    fclose(f);
     for (int j = 0; j < funcCount; j++)
     {
         if (funcArray[j].funcName == "main")
@@ -602,6 +613,52 @@ void executeProgram(const char *resolveBinPath, int64_t mainOffset, Timeline &ti
     // push main frame on the call stack
     // implementation:
     // execute line by line, and according to the keyword perform action
+    FILE *f = fopen(resolveBinPath, "rb");
+    if (f == NULL)
+    {
+        cout << "Error cannot open " << resolveBinPath << endl;
+        return;
+    }
+    Stack<Frame> callStack;
+    Frame mainFrame = Frame();
+    mainFrame.func_name = "main";
+    mainFrame.argc = 0;
+    mainFrame.returnLine = -1;
+    mainFrame.localCount = 0;
+    callStack.push(mainFrame);
+    fseek(f, mainOffset, SEEK_SET);
+    string line;
+    readResolveRecord(f, line);
+
+    while (!callStack.isEmpty())
+    {
+        int64_t lineStart = ftell(f);
+        int64_t field = readResolveRecord(f, line);
+        if (field == -1)
+            break;
+        Token tokens[MAX_TOKENS];
+        int32_t n = tokenizeLine(line, tokens, MAX_TOKENS);
+        string kw = tokens[0].text;
+        bool ok = true;
+
+        if (kw == "set")
+            ok = doSet(callStack.peek(), tokens, n);
+        else if (kw == "add" || kw == "sub" || kw == "mul" || kw == "div")
+            ok = doMath(callStack.peek(), tokens, n);
+        else if (kw == "call")
+            ok = doCall(f, callStack, tokens, n, field, lineStart);
+        else if (kw == "func_end")
+            doReturn(f, callStack);
+        else
+        {
+            cout << "Error unknown instruction " << kw << endl;
+            ok = false;
+        }
+        if (!ok)
+            break;
+        timeline.record(buildSnapshot(callStack));
+    }
+    fclose(f);
 }
 
 // PASS 0x3: SERIALIZE TIMELINE
@@ -613,10 +670,32 @@ void writeTdbg(Timeline &timeline, const char *tdbgPath)
     // after timeline add the index array i the file
     // update the header
 }
+void printTimeline(Timeline &timeline)
+{
+    TimelineNode *node = timeline.begin();
+    int step = 1;
+    while (node != nullptr)
+    {
+        Snapshot *s = node->data;
+        cout << "Step " << step << " (depth " << s->stackDepth << "): ";
+        for (int i = s->stackDepth - 1; i >= 0; i--)
+        {
+            Frame &fr = s->callStack[i];
+            cout << fr.func_name << "[";
+            for (int a = 0; a < fr.argc; a++)
+                cout << fr.argv[a].name << "=" << fr.argv[a].value << " ";
+            for (int l = 0; l < fr.localCount; l++)
+                cout << fr.locals[l].name << "=" << fr.locals[l].value << " ";
+            cout << "] ";
+        }
+        cout << endl;
+        node = node->next;
+        step++;
+    }
+}
 // main section
 int32_t main()
 {
-
     if (!validateProgram("source.bin"))
     {
 
@@ -630,7 +709,7 @@ int32_t main()
 
     Timeline timeline;
     executeProgram("resolve.bin", mainOffset, timeline);
-
+    printTimeline(timeline);
     writeTdbg(timeline, "session.tdbg");
 
     return 0;

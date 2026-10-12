@@ -1,0 +1,4 @@
+func main
+set a 5
+div a 0
+func_end

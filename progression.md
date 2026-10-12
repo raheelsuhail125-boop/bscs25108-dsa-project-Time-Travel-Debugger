@@ -23,3 +23,6 @@ Spent the night understanding stage 3 (which is very hard btw) wrote some starti
 
 Day 11 11-10-2026
 Sunday wrote all the functions required for execute program.
+
+Day 12 12-10-26
+completed execute program and checkd all the errors in my code till now and also checked the timeline.
