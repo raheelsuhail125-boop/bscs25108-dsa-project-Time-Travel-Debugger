@@ -29,3 +29,9 @@ completed execute program and checkd all the errors in my code till now and also
 
 Day 13 13-10-2026
 the project is complete stage 4 Serialization is done and dusted and the project runs.Wrote helper funtion for writeTdbg and then tested it works fine.
+
+
+PHASE 2
+
+11/11/2026
+Started Phase 2
