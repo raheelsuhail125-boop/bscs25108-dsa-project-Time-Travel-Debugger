@@ -62,33 +62,64 @@ class Queue
     };
     Node *front, *rear;
     int count;
-
+ 
 
 public:
     // Implement these functions:
     Queue()
     {
-
+        front = nullptr;
+        rear = nullptr;
+        count = 0;
     }
     ~Queue()
     {
-
+        while (front != nullptr)
+        {
+            Node *old = front;
+            front = front->next;
+            delete old;
+        }
     }
     void enqueue(const T &val)
     {
-
+        Node *n = new Node;
+        n->data = val;
+        n->next = nullptr;
+        if (rear == nullptr)
+        {
+            front = n;
+            rear = n;
+        }
+        else
+        {
+            rear->next = n;
+            rear = n;
+        }
+        count++;
     }
     T dequeue()
     {
-
+        T val = T();
+        if (front != nullptr)
+        {
+            Node *old = front;
+            val = old->data;
+            front = front->next;
+            if (front == nullptr)
+                rear = nullptr;
+            delete old;
+            count--;
+        }
+        return val;
     }
     bool isEmpty()
     {
-        
+      return count == 0;  
     }
     int size()
     {
-
+         return count;
     }
 };
 
